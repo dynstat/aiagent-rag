@@ -81,11 +81,33 @@ python main.py
 - `What is the policy for remote work?`
 - `Combine the info from the vector store with current date constraints.`
 
-## Adding Your Own Data
+## How to Customize for Your Own Use Case
 
-1. Add `.txt` or `.md` files to `data/knowledge_base/`
-2. Re-run `python data/ingest.py`
-3. The agent will automatically use the new data via `rag_search`
+This project is built to be a template. You can easily connect it to your own company's data, databases, and APIs.
+
+### 1. Adding Unstructured Data (Vector Search / RAG)
+If you have PDFs, markdown files, or text documents you want the agent to read:
+1. Place your `.txt` or `.md` files in the `data/knowledge_base/` folder.
+2. Run `python data/ingest.py` to embed and store them in the local ChromaDB.
+3. The agent will automatically search this database whenever a user asks a relevant question.
+
+### 2. Connecting to Your Own Database or APIs (Custom Tools)
+If you want the agent to query a real SQL database, fetch live weather, or interact with external APIs:
+1. Create a new tool function in `tools/custom_tools.py`.
+2. Decorate it with `@tool` and write a **very clear docstring**. The agent reads the docstring to know *when* and *how* to use your tool.
+   ```python
+   from langchain_core.tools import tool
+
+   @tool
+   def query_user_database(email: str) -> str:
+       """Fetches a user's account details from the MySQL database using their email."""
+       # Add your SQL connection or API request logic here...
+       return f"User {email} is on the Pro plan."
+   ```
+3. Register your new tool by adding it to the `TOOLS` list in `tools/__init__.py`.
+
+### 3. Update the Agent's Persona
+To change how the agent behaves or what instructions it follows, edit the `_get_system_prompt()` function inside `agent/runner.py`. Give it a new role, rules, and guidelines specific to your domain!
 
 ## Architecture: How the Agent Thinks
 
