@@ -73,6 +73,40 @@ python data/ingest.py
 python main.py
 ```
 
+## ☁️ Running in Google Colab
+
+Yes, this project runs perfectly in Google Colab! Open a new Colab notebook and run the following in the cells:
+
+**Cell 1: Clone & Install Dependencies**
+```python
+!git clone https://github.com/yourusername/aiagent-rag.git
+%cd aiagent-rag
+!pip install .
+```
+
+**Cell 2: Set Environment Variables**
+```python
+import os
+# Set your API keys here
+os.environ["LLM_PROVIDER"] = "gemini" # or "openai"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key_here"
+
+# (Optional) If using OpenCode / Zen
+# os.environ["OPENAI_API_KEY"] = "your_key"
+# os.environ["OPENAI_BASE_URL"] = "https://opencode.ai/zen/v1"
+# os.environ["OPENAI_MODEL"] = "minimax-m2.5-free"
+```
+
+**Cell 3: Ingest Data & Run**
+```python
+# Create the vector database
+!python data/ingest.py
+
+# Start the interactive agent loop
+!python main.py
+```
+*(Note: Colab supports the `input()` function, so you can interact with the agent directly in the cell output!)*
+
 ## Example Queries
 
 - `What does the documentation say about X?`
