@@ -1,4 +1,4 @@
-# AI Agent RAG — Sales Intelligence Assistant
+# AI Agent RAG — Customizable Knowledge Assistant
 
 An educational project demonstrating **Retrieval-Augmented Generation (RAG)** with a **multi-tool AI agent** using LangChain, LangGraph, and LangSmith.
 
@@ -35,15 +35,15 @@ aiagent-rag/
 │
 ├── tools/
 │   ├── rag_tool.py              # Tool: search the vector store
-│   ├── rep_tools.py             # Tools: CRM lookups, quota, deals
-│   └── utility_tools.py         # Tools: date, ranking, formatting
+│   ├── custom_tools.py          # Custom domain-specific tools
+│   └── utility_tools.py         # Tools: date, calculation, formatting
 │
 └── data/
     ├── ingest.py                # Run once to populate ChromaDB
     └── knowledge_base/          # Your .txt/.md files go here
-        ├── rep_guidelines.md
-        ├── product_catalog.md
-        └── coaching_notes.md
+        ├── your_doc_1.md
+        ├── company_policies.md
+        └── knowledge_base.txt
 ```
 
 ## Setup
@@ -75,13 +75,11 @@ python main.py
 
 ## Example Queries
 
-- `Tell me about REP001`
-- `What is Alice's quota attainment?`
-- `Who is the top performer?`
-- `What coaching notes do we have on Carlos?`
-- `Compare the performance of all reps`
-- `What are the guidelines for the West-Coast territory?`
-- `What is our pricing for enterprise customers?`
+- `What does the documentation say about X?`
+- `Summarize the guidelines from the knowledge base.`
+- `Can you check the database for record 123?`
+- `What is the policy for remote work?`
+- `Combine the info from the vector store with current date constraints.`
 
 ## Adding Your Own Data
 
@@ -101,8 +99,8 @@ LLM Node (Gemini/OpenAI)
      │
      ├─── Tool Call? ──→ ToolNode
      │                     → rag_search (vector DB lookup)
-     │                     → lookup_rep_profile (CRM)
-     │                     → calculate_quota_attainment
+     │                     → fetch_database_record (Custom Tool)
+     │                     → calculate_metrics (Custom Tool)
      │                     → ... (any tool)
      │                     │
      │                     └──→ back to LLM Node (loop!)
