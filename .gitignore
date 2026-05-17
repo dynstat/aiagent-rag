@@ -9,6 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .env
-chroma_db
-data\chroma_db\*.*
+chroma_db/
+data/chroma_db/
 *.sqlite3
