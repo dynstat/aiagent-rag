@@ -79,7 +79,7 @@ Yes, this project runs perfectly in Google Colab! Open a new Colab notebook and 
 
 **Cell 1: Clone & Install Dependencies**
 ```python
-!git clone https://github.com/yourusername/aiagent-rag.git
+!git clone https://github.com/dynstat/aiagent-rag.git
 %cd aiagent-rag
 !pip install .
 ```
