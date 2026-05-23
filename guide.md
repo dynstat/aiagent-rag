@@ -8,9 +8,11 @@ Welcome to the definitive guide for understanding, configuring, and modifying th
 1. [Core Concepts](#1-core-concepts-what-are-we-building)
 2. [Setup & Configuration (.env Demystified)](#2-setup--configuration-env-demystified)
 3. [File-by-File Breakdown](#3-file-by-file-breakdown)
-4. [Understanding the Agent Loop (LangGraph)](#4-understanding-the-agent-loop-langgraph)
-5. [Understanding RAG](#5-understanding-rag-retrieval-augmented-generation)
-6. [Modifying for Your Use Case](#6-modifying-for-your-use-case)
+4. [Detailed Component Flow & Function Reference](#4-detailed-component-flow--function-reference)
+5. [Execution Flow Walkthrough with Example & Sample Data](#5-execution-flow-walkthrough-with-example--sample-data)
+6. [Understanding the Agent Loop (LangGraph)](#6-understanding-the-agent-loop-langgraph)
+7. [Understanding RAG](#7-understanding-rag-retrieval-augmented-generation)
+8. [Modifying for Your Use Case](#8-modifying-for-your-use-case)
 
 ---
 
@@ -75,7 +77,243 @@ Here is what every file does in the system:
 
 ---
 
-## 4. Understanding the Agent Loop (LangGraph)
+## 4. Detailed Component Flow & Function Reference
+
+This section provides a complete map of every function in the codebase, detailing its purpose, inputs, and outputs to help you learn how they work and communicate with each other.
+
+### 🔌 1. Core Entry & Interactive Interface (`main.py`)
+*   **`main()`**
+    *   *Purpose*: The main entry point. Orchestrates startup tasks by validating environment config, auto-ingesting standard knowledge documents if the vector store is empty, initializing the `AgentRunner`, and starting the chat loop.
+    *   *Input*: None
+    *   *Output*: None
+*   **`maybe_ingest()`**
+    *   *Purpose*: Automates document ingestion. Checks if ChromaDB contains stored vectors; if empty, it triggers `run_ingestion()`.
+    *   *Input*: None
+    *   *Output*: None
+*   **`vector_store_is_populated()`**
+    *   *Purpose*: Returns whether the local vector database contains indexed data.
+    *   *Input*: None
+    *   *Output*: `bool` (True if ChromaDB count > 0, else False)
+*   **`interactive_chat(agent)`**
+    *   *Purpose*: Runs the command-line REPL chat interface, listening to user queries and routing special commands (`/quit`, `/history`, `/new`, `/tools`).
+    *   *Input*: `agent` (an `AgentRunner` instance)
+    *   *Output*: None
+
+### ⚙️ 2. Configuration (`config.py`)
+*   **`Config.validate()`**
+    *   *Purpose*: Reads and validates environment variables. Fails fast with an `EnvironmentError` if keys (e.g. `OPENAI_API_KEY` or `GOOGLE_API_KEY`) are missing for the selected provider.
+    *   *Input*: None
+    *   *Output*: None
+
+### 🏗️ 3. LLM Connection Adapter (`llm_factory.py`)
+*   **`get_llm(temperature)`**
+    *   *Purpose*: Instantiates and returns a LangChain chat model client (`ChatGoogleGenerativeAI` or `ChatOpenAI`) based on the `.env` settings.
+    *   *Input*: `temperature: float`
+    *   *Output*: `BaseChatModel`
+
+### 🧠 4. The Agent Graph & Orchestration (`agent/`)
+*   **`build_agent_graph(temperature)`** (in [graph.py](file:///d:/proj/aiagent-rag/agent/graph.py))
+    *   *Purpose*: Declares the LangGraph state machine, binds the `ALL_TOOLS` list to the LLM model, adds graph nodes, defines transitions (edges and conditional edges), sets up `MemorySaver` checkpointer persistence, and compiles it.
+    *   *Input*: `temperature: float` (defaults to `0.0` for predictable tool-calling)
+    *   *Output*: `CompiledGraph`
+*   **`create_llm_node(llm_with_tools)`** (in [graph.py](file:///d:/proj/aiagent-rag/agent/graph.py))
+    *   *Purpose*: Closure factory generating the `llm_node()` node function.
+    *   *Input*: `llm_with_tools` (Chat model with bound tool descriptions)
+    *   *Output*: `llm_node(state)` function
+*   **`llm_node(state)`** (in [graph.py](file:///d:/proj/aiagent-rag/agent/graph.py))
+    *   *Purpose*: Prepends the system prompt instruction to the message list, executes the LLM, and returns the LLM's response message back to the graph state.
+    *   *Input*: `state: AgentState`
+    *   *Output*: `dict` (a state patch containing the new `AIMessage` or tool-call request)
+*   **`AgentRunner.__init__(thread_id)`** (in [runner.py](file:///d:/proj/aiagent-rag/agent/runner.py))
+    *   *Purpose*: Class constructor that registers the compiled graph, sets up a unique thread ID session, and builds a short-term `ConversationMemory` helper.
+    *   *Input*: `thread_id: Optional[str]`
+    *   *Output*: None
+*   **`AgentRunner.run(user_input, verbose)`** (in [runner.py](file:///d:/proj/aiagent-rag/agent/runner.py))
+    *   *Purpose*: Hides LangGraph plumbing from `main.py`. Wraps user input in a `HumanMessage`, streams the graph's execution, prints step-by-step tool execution logs to the console in real-time, updates memory, and returns the final output.
+    *   *Input*: `user_input: str`, `verbose: bool`
+    *   *Output*: `str` (the final AI answer)
+*   **`AgentRunner.new_session()`** (in [runner.py](file:///d:/proj/aiagent-rag/agent/runner.py))
+    *   *Purpose*: Assigns a new random `thread_id` to start a fresh conversational thread, purging old persistent checkpointer states.
+    *   *Input*: None
+    *   *Output*: None
+
+### 🔍 5. Local RAG Pipeline (`rag/` & `data/`)
+*   **`get_embeddings()`** (in [embeddings.py](file:///d:/proj/aiagent-rag/rag/embeddings.py))
+    *   *Purpose*: Initializes the HuggingFace `SentenceTransformerEmbeddings` model (`all-MiniLM-L6-v2`) locally to compute semantic representations of texts.
+    *   *Input*: None
+    *   *Output*: `SentenceTransformerEmbeddings`
+*   **`get_vector_store()`** (in [vector_store.py](file:///d:/proj/aiagent-rag/rag/vector_store.py))
+    *   *Purpose*: Resolves or creates a ChromaDB vector store directory.
+    *   *Input*: None
+    *   *Output*: `Chroma`
+*   **`ingest_documents(documents)`** (in [vector_store.py](file:///d:/proj/aiagent-rag/rag/vector_store.py))
+    *   *Purpose*: Splits raw texts into chunks (~500 chars with 100 char overlap) using `RecursiveCharacterTextSplitter`, calls the embedding model, and saves them in ChromaDB.
+    *   *Input*: `documents: List[Document]`
+    *   *Output*: `Chroma`
+*   **`get_retriever()`** (in [vector_store.py](file:///d:/proj/aiagent-rag/rag/vector_store.py))
+    *   *Purpose*: Exposes a LangChain retriever interface configured to fetch the top `k` matching document chunks.
+    *   *Input*: None
+    *   *Output*: `VectorStoreRetriever`
+*   **`load_documents_from_directory(directory)`** (in [ingest.py](file:///d:/proj/aiagent-rag/data/ingest.py))
+    *   *Purpose*: Loops over raw files in `data/knowledge_base/` and loads `.md` and `.txt` files as `Document` instances.
+    *   *Input*: `directory: str`
+    *   *Output*: `list[Document]`
+
+### 🔧 6. Agent Tools (`tools/`)
+*   **`rag_search(query)`** (in [rag_tool.py](file:///d:/proj/aiagent-rag/tools/rag_tool.py))
+    *   *Purpose*: A tool wrapping ChromaDB similarity search to retrieve text snippets matching the search criteria.
+    *   *Input*: `query: str`
+    *   *Output*: `str`
+*   **`lookup_rep_profile(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
+    *   *Purpose*: Queries the CRM database to fetch metadata profile details of a sales representative.
+    *   *Input*: `rep_id: str`
+    *   *Output*: `str` (JSON representation)
+*   **`calculate_quota_attainment(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
+    *   *Purpose*: Calculates a representative's quota attainment percentage and returns pacing evaluation.
+    *   *Input*: `rep_id: str`
+    *   *Output*: `str`
+*   **`get_rep_deals(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
+    *   *Purpose*: Retrieves active and recent CRM opportunities, close dates, stages, and totals pipeline values.
+    *   *Input*: `rep_id: str`
+    *   *Output*: `str` (JSON representation)
+*   **`list_all_reps()`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
+    *   *Purpose*: Lists every representative's ID, name, territory, and product focus line.
+    *   *Input*: None
+    *   *Output*: `str`
+*   **`summarize_rep_context(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
+    *   *Purpose*: Unified tool aggregating profile info, quota attainment, and pipeline deals in a single consolidated report.
+    *   *Input*: `rep_id: str`
+    *   *Output*: `str`
+*   **`get_current_date_and_time()`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
+    *   *Purpose*: Exposes system timezone, current date/time, year progress, and current quarter.
+    *   *Input*: None
+    *   *Output*: `str`
+*   **`calculate_rep_ranking(metric)`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
+    *   *Purpose*: Generates a ranked leaderboard of sales reps by quota attainment, YTD sales, or tenure.
+    *   *Input*: `metric: str`
+    *   *Output*: `str`
+*   **`format_currency(amount, currency)`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
+    *   *Purpose*: Formats monetary values to clean currency representations (USD, EUR, GBP).
+    *   *Input*: `amount: float`, `currency: str`
+    *   *Output*: `str`
+
+---
+
+## 5. Execution Flow Walkthrough with Example & Sample Data
+
+To understand how these components interact, let's walk through a concrete example.
+
+### 📝 Scenario & Sample Data
+
+Suppose our local knowledge base and CRM database contain the following information:
+*   **CRM Database (`rep_tools.py`)**:
+    *   `REP001` (Alice Johnson): Quota: `$500,000` | YTD Sales: `$312,000` | Quota Attainment: `62.4%` | Manager: `Bob Martinez`
+    *   `REP003` (Diana Patel): Quota: `$600,000` | YTD Sales: `$540,000` | Quota Attainment: `90.0%` | Manager: `Bob Martinez`
+*   **Knowledge Base File (`coaching_notes.md`)**:
+    *   Contains the manager's evaluation details: Alice tends to rely on a single champion and needs to multi-thread. Diana has deep relationships in healthcare tech and is a mentor.
+
+---
+
+### 🔄 Step-by-Step Flow
+
+#### Step 1: User Query Input
+The user types the query:
+> *"Compare Diana Patel's quota attainment with Alice Johnson and tell me if they are on track based on manager notes."*
+The REPL loop in `main.py` passes this string to `AgentRunner.run()`.
+
+#### Step 2: Session Initialization & Graph State Setup
+`AgentRunner` saves the message to short-term memory (`self.memory`), wraps it in a LangChain `HumanMessage`, and starts streaming graph execution:
+*   **Graph State Initialization**: `state = {"messages": [HumanMessage(content="Compare Diana Patel's...")]}`
+
+#### Step 3: Reasoning Node (`llm_node`)
+The graph moves to the `"llm"` node.
+1.  `llm_node()` is invoked, prepending the `SYSTEM_PROMPT` to the state messages.
+2.  `llm.bind_tools(ALL_TOOLS)` evaluates the query. The LLM understands that:
+    *   It needs the exact numerical quota details for Alice and Diana. It resolves their names to `REP001` and `REP003` and schedules `calculate_quota_attainment("REP001")` and `calculate_quota_attainment("REP003")` tool calls.
+    *   It needs descriptive context from the coaching notes. It schedules a `rag_search(query="coaching notes Alice Johnson Diana Patel")` tool call.
+3.  The node returns the LLM response containing these 3 `tool_calls` requests.
+
+#### Step 4: Routing Check (`tools_condition`)
+LangGraph checks the `AIMessage` returned by the LLM node:
+*   Because it contains `tool_calls`, the conditional edge routes execution to the `"tools"` node.
+
+#### Step 5: Tools Execution (`ToolNode`)
+The `ToolNode` executes the requested functions:
+1.  **`calculate_quota_attainment("REP001")`** computes:
+    *   Annual Quota Progress vs Time (e.g. `39.5%` progress of year).
+    *   Attainment: `62.4%` (Status: `🟢 On Track`).
+2.  **`calculate_quota_attainment("REP003")`** computes:
+    *   Attainment: `90.0%` (Status: `🟢 On Track`).
+3.  **`rag_search("coaching notes Alice Johnson Diana Patel")`**:
+    *   Calls `get_retriever().invoke("coaching notes...")` which uses HuggingFace embeddings (`embeddings.py`) to encode the text query.
+    *   Queries `ChromaDB` (`vector_store.py`) to find matching document chunks from `coaching_notes.md`.
+    *   Returns the coaching text snippets for Alice and Diana.
+*   The results are appended to the state graph as `ToolMessage`s.
+
+#### Step 6: Loop Back to Reasoning Node (`llm_node`)
+The graph follows the fixed edge from `"tools"` back to `"llm"`.
+1.  `llm_node()` is invoked again. The model is now provided with:
+    *   The original user prompt.
+    *   Its own tool call commands.
+    *   The results returned by the tools (numerical quota status and descriptive manager coaching notes).
+2.  The LLM synthesizes this combined database and document information:
+    *   It calculates the difference in quota attainment (`90%` vs `62.4%`).
+    *   It extracts coaching advice (Alice needs to work on multi-threading accounts; Diana is an overachiever being considered for a lead role).
+3.  The node returns the final synthesized markdown response.
+
+#### Step 7: Final End Route (`tools_condition`)
+LangGraph checks the latest response. Since it is a text-only response (no further tool calls requested), it routes the flow to the `END` state.
+*   `AgentRunner.run()` records the final answer in memory and returns it to `main.py`, which prints it to the user.
+
+---
+
+### 📊 System Architecture & Data Flow Diagram
+
+Below is the conceptual flow diagram representing the full lifecycle of a user query processing through the system.
+
+```mermaid
+graph TD
+    %% Define styles
+    classDef default fill:#1e1e2e,stroke:#cdd6f4,stroke-width:1px,color:#cdd6f4;
+    classDef highlight fill:#f5c2e7,stroke:#cdd6f4,stroke-width:2px,color:#11111b;
+    classDef database fill:#89b4fa,stroke:#cdd6f4,stroke-width:1px,color:#11111b;
+    classDef tool fill:#a6e3a1,stroke:#cdd6f4,stroke-width:1px,color:#11111b;
+
+    User([User Query]) --> REPL[main.py: interactive_chat]
+    REPL --> Runner[agent/runner.py: AgentRunner.run]
+    
+    subgraph GraphCycle["LangGraph State Machine (agent/graph.py)"]
+        StartNode[START] --> LLMNode["llm node (create_llm_node)"]:::highlight
+        LLMNode --> CondEdge{tools_condition?}
+        
+        CondEdge -- "Yes (tool_calls requested)" --> ToolNode["tools node (ToolNode)"]:::highlight
+        ToolNode --> LLMNode
+        
+        CondEdge -- "No (final response)" --> EndNode[END]
+    end
+    
+    Runner --> StartNode
+    EndNode --> Runner
+    Runner --> Response([Final Terminal Response])
+
+    subgraph ToolCatalog["Registered Tools (tools/)"]
+        ToolNode --> RepTool["lookup_rep_profile()<br>calculate_quota_attainment()<br>get_rep_deals()"]:::tool
+        ToolNode --> UtilTool["calculate_rep_ranking()<br>get_current_date_and_time()"]:::tool
+        ToolNode --> RagSearch["rag_search()"]:::tool
+    end
+
+    subgraph DBs["Data Layer"]
+        RepTool --> CRM[(REPS_DB / DEALS_DB)]:::database
+        UtilTool --> SystemClock[(System Calendar)]:::database
+        RagSearch --> Retriever[rag/vector_store.py: get_retriever]:::database
+        Retriever --> Embeddings[rag/embeddings.py: get_embeddings]
+        Embeddings --> Chroma[(ChromaDB Vector Store)]:::database
+    end
+```
+
+---
+
+## 6. Understanding the Agent Loop (LangGraph)
 
 If you look inside `agent/graph.py`, you will see we define a `StateGraph`. Think of this as a state machine:
 
@@ -88,7 +326,7 @@ If you look inside `agent/graph.py`, you will see we define a `StateGraph`. Thin
 
 ---
 
-## 5. Understanding RAG (Retrieval-Augmented Generation)
+## 7. Understanding RAG (Retrieval-Augmented Generation)
 
 When you run `python data/ingest.py`, here is what happens:
 1.  **Load**: `TextLoader` reads your markdown files.
@@ -103,7 +341,7 @@ When the agent uses `rag_search("remote work policy")`:
 
 ---
 
-## 6. Modifying for Your Use Case
+## 8. Modifying for Your Use Case
 
 To make this project your own, follow these 3 steps:
 
