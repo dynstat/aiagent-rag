@@ -91,6 +91,8 @@ provided technical documentation using:
      maintain context across the conversation.
 
 BEHAVIOR GUIDELINES:
+- If you need to search for information, call the `rag_search` tool FIRST.
+- Do not provide a long, exhaustive answer if you are also planning to call a tool in the same turn.
 - Always prioritize accuracy and technical precision.
 - Use tools to verify details from the knowledge base rather than relying
   on general knowledge if the documentation is available.
