@@ -95,6 +95,41 @@ Whenever you add or remove files in `data/knowledge_base/`, simply re-run the in
 uv run data/ingest.py
 ```
 
+## ☁️ Running in Google Colab
+
+This project runs perfectly in Google Colab. Since Colab provides a temporary environment, you don't need `uv`. Follow these steps:
+
+### 1. Set up API Keys
+Instead of a `.env` file, use Colab's built-in **Secrets** (the key icon in the left sidebar):
+1. Add a secret named `LLM_PROVIDER` (value: `gemini`, `openai`, or `groq`).
+2. Add your specific key (e.g., `GOOGLE_API_KEY` or `GROQ_API_KEY`).
+3. Enable "Notebook access" for these secrets.
+
+### 2. Run in a Cell
+Copy and paste this into a Colab cell to initialize and start the agent:
+
+```python
+# 1. Clone & Install
+!git clone https://github.com/YOUR_USERNAME/aiagent-rag.git
+%cd aiagent-rag
+!pip install .
+
+# 2. Inject Secrets into Environment
+from google.colab import userdata
+import os
+
+os.environ["LLM_PROVIDER"] = userdata.get('LLM_PROVIDER')
+# Add the key relevant to your provider
+if os.environ["LLM_PROVIDER"] == "gemini":
+    os.environ["GOOGLE_API_KEY"] = userdata.get('GOOGLE_API_KEY')
+elif os.environ["LLM_PROVIDER"] == "groq":
+    os.environ["GROQ_API_KEY"] = userdata.get('GROQ_API_KEY')
+
+# 3. Ingest Data & Run
+!python data/ingest.py
+!python main.py
+```
+
 ## Example Queries (using sample data)
 
 - `What is the core architecture described in the documents?`
