@@ -1,3 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agent", "rag", "tools", "memory"]
+
 [project]
 name = "aiagent-rag"
 version = "0.1.0"
