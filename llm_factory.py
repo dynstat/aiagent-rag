@@ -7,8 +7,9 @@ PURPOSE: Single place that creates the LangChain LLM object.
          This makes it trivial to swap providers without touching agent code.
 """
 
-from config import Config
 from langchain_core.language_models import BaseChatModel
+
+from config import Config
 
 
 def get_llm(temperature: float = 0.0) -> BaseChatModel:
@@ -32,10 +33,11 @@ def get_llm(temperature: float = 0.0) -> BaseChatModel:
         # ChatGoogleGenerativeAI wraps the Gemini REST API.
         # It supports tool/function calling which is required for our agent.
         from langchain_google_genai import ChatGoogleGenerativeAI
+        from pydantic import SecretStr
 
         return ChatGoogleGenerativeAI(
             model=Config.GEMINI_MODEL,
-            google_api_key=Config.GOOGLE_API_KEY,
+            google_api_key=SecretStr(Config.GOOGLE_API_KEY),
             temperature=temperature,
             # convert_system_message_to_human=True is needed for some Gemini
             # model versions that don't support system messages natively.
@@ -52,21 +54,20 @@ def get_llm(temperature: float = 0.0) -> BaseChatModel:
         # Authorization Bearer header when using a custom base_url.
         # Explicitly setting it in default_headers guarantees delivery.
         from langchain_openai import ChatOpenAI
+        from pydantic import SecretStr
 
-        api_key = Config.OPENAI_API_KEY
-        if not api_key:
-            raise EnvironmentError(
-                "OPENAI_API_KEY is empty. Check your .env file."
-            )
+        api_key_str = Config.OPENAI_API_KEY
+        if not api_key_str:
+            raise EnvironmentError("OPENAI_API_KEY is empty. Check your .env file.")
 
         return ChatOpenAI(
             model=Config.OPENAI_MODEL,
-            api_key=api_key,
+            api_key=SecretStr(api_key_str),
             base_url=Config.OPENAI_BASE_URL,
             temperature=temperature,
             # Explicit Authorization header — works around SDK/proxy quirks
             default_headers={
-                "Authorization": f"Bearer {api_key}",
+                "Authorization": f"Bearer {api_key_str}",
                 # OpenRouter recommends these optional headers for attribution
                 "HTTP-Referer": "http://localhost",
                 "X-Title": "aiagent-rag",
