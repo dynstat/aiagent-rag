@@ -12,11 +12,12 @@ PURPOSE: Provides a clean, high-level interface for running the agent.
 import uuid
 from typing import Optional
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
 
-from agent.graph import build_agent_graph
-from memory import ConversationMemory
+from agent.graph import AgentState, build_agent_graph
 from config import Config
+from memory import ConversationMemory
 
 
 class AgentRunner:
@@ -54,7 +55,7 @@ class AgentRunner:
         self.memory = ConversationMemory(window_size=Config.MEMORY_WINDOW)
 
         # LangGraph config — passed on every invoke() call to route state
-        self._config = {"configurable": {"thread_id": self.thread_id}}
+        self._config: RunnableConfig = {"configurable": {"thread_id": self.thread_id}}
 
         print(f"[AgentRunner] Session started | Thread ID: {self.thread_id}")
 
@@ -81,12 +82,12 @@ class AgentRunner:
         self.memory.add_user_message(user_input)
 
         # Wrap user input in a LangChain HumanMessage
-        input_state = {"messages": [HumanMessage(content=user_input)]}
+        input_state: AgentState = {"messages": [HumanMessage(content=user_input)]}
 
         if verbose:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"[User]: {user_input}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
         # ── Invoke the LangGraph agent ────────────────────────────────────────
         # stream_mode="values" returns the FULL state after each graph step.
@@ -94,7 +95,9 @@ class AgentRunner:
         final_state = None
         step_count = 0
 
-        for state in self.graph.stream(input_state, config=self._config, stream_mode="values"):
+        for state in self.graph.stream(
+            input_state, config=self._config, stream_mode="values"
+        ):
             step_count += 1
             last_message = state["messages"][-1]
 
@@ -108,10 +111,14 @@ class AgentRunner:
                         print(f"   Args: {tc['args']}")
                 elif msg_type == "ToolMessage":
                     # Tool returned a result
-                    print(f"\n[Step {step_count}] 📤 Tool Result ({last_message.name}):")
+                    print(
+                        f"\n[Step {step_count}] 📤 Tool Result ({last_message.name}):"
+                    )
                     # Print first 300 chars to avoid flooding the terminal
                     content_preview = str(last_message.content)[:300]
-                    print(f"   {content_preview}{'...' if len(str(last_message.content)) > 300 else ''}")
+                    print(
+                        f"   {content_preview}{'...' if len(str(last_message.content)) > 300 else ''}"
+                    )
 
             final_state = state
 
@@ -129,7 +136,7 @@ class AgentRunner:
         if verbose:
             print(f"\n[Agent Response] ({step_count} steps):")
             print(f"{response_text}")
-            print(f"\n{'─'*60}")
+            print(f"\n{'─' * 60}")
 
         return response_text
 
