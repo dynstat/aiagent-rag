@@ -107,12 +107,12 @@ class AgentRunner:
                 if hasattr(last_message, "tool_calls") and last_message.tool_calls:
                     # LLM decided to call a tool
                     for tc in last_message.tool_calls:
-                        print(f"\n[Step {step_count}] 🔧 Tool Call: {tc['name']}")
+                        print(f"\n[Step {step_count}] [Tool Call]: {tc['name']}")
                         print(f"   Args: {tc['args']}")
                 elif msg_type == "ToolMessage":
                     # Tool returned a result
                     print(
-                        f"\n[Step {step_count}] 📤 Tool Result ({last_message.name}):"
+                        f"\n[Step {step_count}] [Tool Result] ({last_message.name}):"
                     )
                     # Print first 300 chars to avoid flooding the terminal
                     content_preview = str(last_message.content)[:300]

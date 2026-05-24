@@ -38,6 +38,12 @@ UNDERSTANDING THE FLOW:
 import os
 import sys
 
+# Reconfigure stdout/stderr to replace unencodable characters gracefully on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(errors="replace")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Load config FIRST — this reads .env and sets all env variables
 # ─────────────────────────────────────────────────────────────────────────────
@@ -174,7 +180,7 @@ def interactive_chat(agent: AgentRunner) -> None:
         try:
             user_input = input("You: ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n\nGoodbye! 👋")
+            print("\n\nGoodbye!")
             break
 
         if not user_input:
@@ -182,7 +188,7 @@ def interactive_chat(agent: AgentRunner) -> None:
 
         # ── Special commands ─────────────────────────────────────────────────
         if user_input.lower() == "/quit":
-            print("Goodbye! 👋")
+            print("Goodbye!")
             break
 
         elif user_input.lower() == "/history":

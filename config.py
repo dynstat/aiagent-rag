@@ -43,10 +43,9 @@ class Config:
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     # ── Groq (High-speed Inference) ──────────────────────────────────────────
-    # NOTE: Llama 3 models on Groq are sensitive to tool instructions.
-    # llama3-70b-8192 is currently the most stable for agentic tool use.
+    # NOTE: llama-3.3-70b-versatile is the current flagship in May 2026.
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama3-70b-8192")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # ── LangSmith Tracing ────────────────────────────────────────────────────
     LANGCHAIN_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "")

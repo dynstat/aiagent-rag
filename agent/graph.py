@@ -93,6 +93,10 @@ BEHAVIOR GUIDELINES:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+import json
+import re
+
+
 def create_llm_node(llm_with_tools):
     """
     PURPOSE: Creates the 'llm' node function — the agent's reasoning step.
@@ -118,11 +122,55 @@ def create_llm_node(llm_with_tools):
         Prepends the system prompt to every call so the LLM always has its
         role and guidelines, regardless of conversation length.
         """
+        from langchain_core.messages import AIMessage
+
         # Build the full message list: system prompt + conversation history
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(state["messages"])
 
-        # Invoke the LLM — it will either respond or request a tool call
-        response = llm_with_tools.invoke(messages)
+        try:
+            # Invoke the LLM — it will either respond or request a tool call
+            response = llm_with_tools.invoke(messages)
+        except Exception as e:
+            # ── GROQ TOOL-CALL RESCUE MECHANISM ──────────────────────────────
+            # Groq's API sometimes rejects valid tool calls if the model formats
+            # them with <function> tags. It throws a 400 error but includes the
+            # generated text in the 'failed_generation' field.
+            error_str = str(e)
+            if "tool_use_failed" in error_str and "failed_generation" in error_str:
+                print("\n[Agent] Rescuing Groq tool-call format error...")
+                try:
+                    # Extract the JSON part of the error message
+                    # The error string usually contains a dict repr or JSON.
+                    # We'll use regex to pull out the failed_generation value.
+                    match = re.search(
+                        r"'failed_generation':\s*['\"](<function=.*?(?:</function>|/>))['\"]",
+                        error_str,
+                    )
+                    if match:
+                        failed_gen = match.group(1)
+                        # Extract tool name and args: <function=tool_name{"arg": "val"}>
+                        call_match = re.search(r"<function=(\w+)\s*(\{.*?\})", failed_gen)
+                        if call_match:
+                            tool_name = call_match.group(1)
+                            tool_args = json.loads(call_match.group(2))
+
+                            # Manually construct the expected AIMessage
+                            response = AIMessage(
+                                content="",
+                                tool_calls=[
+                                    {
+                                        "name": tool_name,
+                                        "args": tool_args,
+                                        "id": f"call_{tool_name}_rescued",
+                                    }
+                                ],
+                            )
+                            return {"messages": [response]}
+                except Exception as parse_e:
+                    print(f"[Agent] Failed to rescue tool call: {parse_e}")
+
+            # If it wasn't a rescuable Groq error, re-raise it
+            raise e
 
         # Return only the NEW message (LangGraph merges it into state["messages"])
         return {"messages": [response]}
@@ -153,11 +201,11 @@ def build_agent_graph(temperature: float = 0.0):
         A compiled LangGraph CompiledGraph ready to invoke.
     """
 
-    # ── Step 1: LLM with tools bound ────────────────────────────────────────
-    # bind_tools() tells the LLM about available tools (via function calling).
-    # The LLM can now include ToolCall objects in its responses, not just text.
-    llm = get_llm(temperature=temperature)
-    llm_with_tools = llm.bind_tools(ALL_TOOLS)
+    # ── Step 1: LLM with fallback and tools ──────────────────────────────────
+    # We pass ALL_TOOLS directly to the factory so that the primary LLM
+    # AND every fallback LLM (Gemini, OpenAI) have the tools bound to them.
+    # This allows a fallback model to take over seamlessly if Groq fails.
+    llm_with_tools = get_llm(temperature=temperature, tools=ALL_TOOLS)
 
     # ── Step 2: Build the graph ──────────────────────────────────────────────
     # StateGraph(AgentState) declares what the shared state looks like
