@@ -57,6 +57,7 @@ Copy-Item .env.example .env
 
 Get your keys:
 - **Google Gemini**: https://aistudio.google.com/app/apikey
+- **Groq**: https://console.groq.com/keys
 
 ### 3. Ingest your knowledge base (one-time setup)
 ```powershell
@@ -87,6 +88,8 @@ This project is built to be a template. You can easily connect it to **any** tec
 
 ### 2. Update the Agent's Persona
 To change how the agent behaves or its default expertise, edit the `SYSTEM_PROMPT` inside `agent/graph.py`. Give it rules and guidelines specific to your technical domain!
+
+> **Note for Groq Users**: Llama 3 models on Groq are highly sensitive to tool-calling instructions in the system prompt. For best results, keep the `SYSTEM_PROMPT` clean and avoid mentioning tool names directly; let the LLM use the structured tool-calling API automatically. We recommend using `llama-3.3-70b-versatile` for the best balance of speed and reasoning.
 
 ## Architecture: How the Agent Thinks
 
