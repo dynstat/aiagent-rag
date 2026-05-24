@@ -25,12 +25,11 @@ import sys
 # Ensure project root is on sys.path so imports like `from config import Config` work
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
-from rag import ingest_documents
 from config import Config
-
+from rag import ingest_documents
 
 KNOWLEDGE_BASE_DIR = os.path.join(os.path.dirname(__file__), "knowledge_base")
 
@@ -58,10 +57,13 @@ def load_documents_from_directory(directory: str) -> list[Document]:
 
     documents = []
 
-    # Walk all files manually to support both .txt and .md
+    # Walk all files manually to support .txt, .md, and .pdf
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
-        if filename.endswith((".txt", ".md")) and os.path.isfile(filepath):
+        if not os.path.isfile(filepath):
+            continue
+
+        if filename.endswith((".txt", ".md")):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
             documents.append(
@@ -71,6 +73,17 @@ def load_documents_from_directory(directory: str) -> list[Document]:
                 )
             )
             print(f"[Ingest] Loaded: {filename} ({len(content)} chars)")
+        elif filename.endswith(".pdf"):
+            try:
+                loader = PyPDFLoader(filepath)
+                pdf_docs = loader.load()
+                # Ensure filename is in metadata for each page
+                for d in pdf_docs:
+                    d.metadata["filename"] = filename
+                documents.extend(pdf_docs)
+                print(f"[Ingest] Loaded PDF: {filename} ({len(pdf_docs)} pages)")
+            except Exception as e:
+                print(f"[Ingest] Error loading PDF {filename}: {e}")
 
     return documents
 
@@ -80,14 +93,14 @@ def run_ingestion() -> None:
     PURPOSE: Main ingestion pipeline.
     Loads all documents and stores them in the vector store.
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("RAG Knowledge Base Ingestion")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Source:      {KNOWLEDGE_BASE_DIR}")
     print(f"Vector Store: {Config.CHROMA_PERSIST_DIR}")
     print(f"Collection:   {Config.CHROMA_COLLECTION}")
     print(f"Embedding:    {Config.EMBEDDING_MODEL}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # Load documents
     docs = load_documents_from_directory(KNOWLEDGE_BASE_DIR)

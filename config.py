@@ -8,6 +8,7 @@ PURPOSE: Centralized configuration for the entire AI Agent RAG project.
 """
 
 import os
+
 from dotenv import load_dotenv
 
 # Load variables from .env file into os.environ.
@@ -54,13 +55,11 @@ class Config:
     CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./data/chroma_db")
 
     # Collection name inside ChromaDB — think of it as a table name
-    CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "rep_context")
+    CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "technical_knowledge")
 
     # Sentence-Transformers model used for creating embeddings
     # all-MiniLM-L6-v2 is small (80MB) and fast — good for local dev
-    EMBEDDING_MODEL: str = os.getenv(
-        "EMBEDDING_MODEL", "all-MiniLM-L6-v2"
-    )
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
     # Number of top relevant documents to retrieve from the vector store
     RAG_TOP_K: int = int(os.getenv("RAG_TOP_K", "4"))

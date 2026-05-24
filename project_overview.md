@@ -28,16 +28,15 @@ aiagent-rag/
 ├── tools/
 │   ├── __init__.py              ← ALL_TOOLS registry (single list)
 │   ├── rag_tool.py              ← rag_search: semantic search tool
-│   ├── rep_tools.py             ← 5 CRM-style rep tools
-│   └── utility_tools.py         ← date, ranking, formatting tools
+│   └── utility_tools.py         ← date and time utility
 │
 └── data/
-    ├── ingest.py                ← Run once to populate ChromaDB
+    ├── ingest.py                ← Run once to populate ChromaDB (supports PDF, MD, TXT)
     ├── chroma_db/               ← Auto-created: persisted vector store
     └── knowledge_base/
-        ├── rep_guidelines.md    ← Sample: territory + quota policies
-        ├── product_catalog.md   ← Sample: product/pricing + objections
-        └── coaching_notes.md    ← Sample: rep-specific coaching notes
+        ├── Async Rust (...).pdf ← Core technical book
+        ├── CMAKE.md             ← CMake reference
+        └── ...                  ← Other MD/TXT technical docs
 ```
 
 ## Quick Start
@@ -56,24 +55,17 @@ python data/ingest.py
 python main.py
 ```
 
-## Available Tools (9 total)
+## Available Tools
 
 | Tool | Purpose |
 |------|---------|
-| `rag_search` | Semantic search over ChromaDB vector store |
-| `lookup_rep_profile` | Get a rep's CRM profile by rep ID |
-| `calculate_quota_attainment` | % of annual quota achieved |
-| `get_rep_deals` | Open deals / pipeline for a rep |
-| `list_all_reps` | Show all rep IDs and names |
-| `summarize_rep_context` | All-in-one rep briefing (aggregates profile + deals + perf) |
-| `get_current_date_and_time` | Current date (for time-relative queries) |
-| `calculate_rep_ranking` | Leaderboard by metric (attainment / YTD / tenure) |
-| `format_currency` | Pretty-print monetary values |
+| `rag_search` | Semantic search over ChromaDB vector store (Rust/CMake docs) |
+| `get_current_date_and_time` | Current date (for temporal context) |
 
 ## Key Concepts Demonstrated
 
-### RAG
-- Documents in `data/knowledge_base/` → split into 500-char chunks → embedded by `all-MiniLM-L6-v2` → stored in ChromaDB → retrieved by cosine similarity at query time
+### RAG (Multi-format)
+- Documents in `data/knowledge_base/` (PDF, Markdown, Text) → split into chunks → embedded by `all-MiniLM-L6-v2` → stored in ChromaDB → retrieved by cosine similarity at query time. Supports complex PDF layouts via `PyPDFLoader`.
 
 ### LangGraph Agent Loop
 ```

@@ -57,7 +57,9 @@ if Config.LANGCHAIN_TRACING_V2 == "true" and Config.LANGCHAIN_API_KEY:
 else:
     # Explicitly disable to avoid accidental tracing without keys
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
-    print("[LangSmith] Tracing disabled (set LANGCHAIN_API_KEY + LANGCHAIN_TRACING_V2=true to enable)")
+    print(
+        "[LangSmith] Tracing disabled (set LANGCHAIN_API_KEY + LANGCHAIN_TRACING_V2=true to enable)"
+    )
 
 # ── Explicitly push keys into os.environ so all libraries pick them up ────────
 # Some libraries (openai SDK, langchain) read directly from os.environ rather
@@ -70,10 +72,11 @@ if Config.OPENAI_BASE_URL:
 
 # Debug: confirm the key loaded (shows only first 8 chars — safe to display)
 _key_preview = Config.OPENAI_API_KEY[:8] + "..." if Config.OPENAI_API_KEY else "NOT SET"
-print(f"[Config] Provider={Config.LLM_PROVIDER} | Model={Config.OPENAI_MODEL} | Key={_key_preview}")
+print(
+    f"[Config] Provider={Config.LLM_PROVIDER} | Model={Config.OPENAI_MODEL} | Key={_key_preview}"
+)
 
 from agent import AgentRunner
-
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -86,6 +89,7 @@ def vector_store_is_populated() -> bool:
     """
     try:
         from rag import get_vector_store
+
         store = get_vector_store()
         # Try getting a collection count — if > 0, data exists
         count = store._collection.count()
@@ -107,6 +111,7 @@ def maybe_ingest() -> None:
         # Import and run the ingestion pipeline
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "data"))
         from data.ingest import run_ingestion
+
         run_ingestion()
     else:
         print("[Setup] Vector store already populated. Skipping ingestion.")
@@ -128,20 +133,21 @@ def interactive_chat(agent: AgentRunner) -> None:
     Args:
         agent: The initialized AgentRunner instance.
     """
-    print("\n" + "="*60)
-    print("  AI Agent RAG — Sales Intelligence Assistant")
-    print("="*60)
-    print(f"  Provider : {Config.LLM_PROVIDER.upper()} ({Config.GEMINI_MODEL if Config.LLM_PROVIDER == 'gemini' else Config.OPENAI_MODEL})")
+    print("\n" + "=" * 60)
+    print("  AI Agent RAG — Technical Knowledge Assistant")
+    print("=" * 60)
+    print(
+        f"  Provider : {Config.LLM_PROVIDER.upper()} ({Config.GEMINI_MODEL if Config.LLM_PROVIDER == 'gemini' else Config.OPENAI_MODEL})"
+    )
     print(f"  Thread   : {agent.thread_id[:8]}...")
-    print("="*60)
+    print("=" * 60)
     print("  Commands: /history | /new | /tools | /quit")
-    print("="*60)
-    print("\n  Try asking:")
-    print("  • 'Tell me about REP001'")
-    print("  • 'Who is the top performer?'")
-    print("  • 'What is Alice's quota attainment?'")
-    print("  • 'What coaching notes do we have on Carlos?'")
-    print("  • 'Compare REP001 and REP003 performance'\n")
+    print("=" * 60)
+    print("\n  Ask questions about any technical documentation you've added.")
+    print("  Try asking (if using sample data):")
+    print("  • 'What is Async Rust?'")
+    print("  • 'How do I create a multi-module project in CMake?'")
+    print("  • 'Explain the core concepts from the provided guides.'\n")
 
     while True:
         try:
@@ -161,11 +167,11 @@ def interactive_chat(agent: AgentRunner) -> None:
         elif user_input.lower() == "/history":
             history = agent.get_conversation_history()
             if history:
-                print(f"\n{'─'*40}")
+                print(f"\n{'─' * 40}")
                 print("Conversation History:")
-                print(f"{'─'*40}")
+                print(f"{'─' * 40}")
                 print(history)
-                print(f"{'─'*40}\n")
+                print(f"{'─' * 40}\n")
             else:
                 print("[No conversation history yet]\n")
             continue
@@ -177,14 +183,15 @@ def interactive_chat(agent: AgentRunner) -> None:
 
         elif user_input.lower() == "/tools":
             from tools import ALL_TOOLS
-            print(f"\n{'─'*40}")
+
+            print(f"\n{'─' * 40}")
             print(f"Available Tools ({len(ALL_TOOLS)}):")
-            print(f"{'─'*40}")
+            print(f"{'─' * 40}")
             for t in ALL_TOOLS:
                 # Each LangChain tool has a .name and .description attribute
                 desc_first_line = t.description.strip().split("\n")[0]
                 print(f"  • {t.name}: {desc_first_line}")
-            print(f"{'─'*40}\n")
+            print(f"{'─' * 40}\n")
             continue
 
         # ── Normal query — send to agent ─────────────────────────────────────

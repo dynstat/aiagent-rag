@@ -33,22 +33,22 @@ PURPOSE: Defines the AI agent as a LangGraph StateGraph.
 """
 
 from typing import Annotated, Sequence
-from typing_extensions import TypedDict
 
 from langchain_core.messages import BaseMessage, SystemMessage
-from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.checkpoint.memory import MemorySaver
+from typing_extensions import TypedDict
 
+from config import Config
 from llm_factory import get_llm
 from tools import ALL_TOOLS
-from config import Config
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STATE DEFINITION
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class AgentState(TypedDict):
     """
@@ -64,6 +64,7 @@ class AgentState(TypedDict):
                   message, LangGraph merges it into the list rather than
                   replacing the whole list.  This is how history accumulates.
     """
+
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
@@ -71,35 +72,40 @@ class AgentState(TypedDict):
 # SYSTEM PROMPT
 # ─────────────────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are an intelligent Sales Intelligence AI Assistant specializing
-in Rep Context Analysis. Your primary job is to help users understand, evaluate,
-and get insights about sales representatives using a combination of:
+SYSTEM_PROMPT = """You are an expert Technical Knowledge Assistant. Your primary
+job is to help users understand, explore, and apply information from the
+provided technical documentation using:
 
-1. INTERNAL KNOWLEDGE BASE (via rag_search tool):
-   - Documents, notes, and data that were loaded into the vector store
-   - Use this for nuanced, descriptive context about reps or policies
+1. TECHNICAL KNOWLEDGE BASE (via rag_search tool):
+   - This is your primary source of truth. It contains the documentation,
+     guides, and books provided by the user.
+   - Use this to provide accurate, high-quality answers rooted in the
+     specific content of the knowledge base.
 
-2. CRM TOOLS (lookup_rep_profile, get_rep_deals, etc.):
-   - Structured data directly from the CRM system
-   - Use these for precise numbers, deal stages, and quota data
+2. UTILITIES:
+   - Use `get_current_date_and_time` when needed for temporal context.
 
 3. MEMORY:
-   - You have access to the full conversation history
-   - Reference earlier context when relevant (e.g., "As we discussed earlier...")
-   - Don't repeat information you already provided unless asked
+   - You have access to the full conversation history.
+   - Reference earlier technical decisions or questions when relevant to
+     maintain context across the conversation.
 
 BEHAVIOR GUIDELINES:
-- Always use tools to retrieve factual data; never hallucinate numbers
-- Call tools multiple times if needed to build a complete picture
-- After getting tool results, synthesize them into a clear, concise answer
-- If a rep ID is unknown, use `list_all_reps` to find the right one
-- Be direct and business-focused; avoid unnecessary filler text
+- Always prioritize accuracy and technical precision.
+- Use tools to verify details from the knowledge base rather than relying
+  on general knowledge if the documentation is available.
+- Provide clear, well-explained answers. If the documentation contains
+  code examples or specific procedures, use them.
+- If information is missing from the knowledge base, state so clearly
+  and offer to help with what is available.
+- Be professional, direct, and concise.
 """
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NODE DEFINITIONS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def create_llm_node(llm_with_tools):
     """
@@ -118,6 +124,7 @@ def create_llm_node(llm_with_tools):
     Returns:
         A node function compatible with LangGraph's StateGraph.
     """
+
     def llm_node(state: AgentState) -> dict:
         """
         The LLM reasoning node.
@@ -140,6 +147,7 @@ def create_llm_node(llm_with_tools):
 # ─────────────────────────────────────────────────────────────────────────────
 # GRAPH BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def build_agent_graph(temperature: float = 0.0):
     """
