@@ -110,7 +110,7 @@ Copy and paste this into a Colab cell to initialize and start the agent:
 
 ```python
 # 1. Clone & Install
-!git clone https://github.com/YOUR_USERNAME/aiagent-rag.git
+!git clone https://github.com/dynstat/aiagent-rag.git
 %cd aiagent-rag
 !pip install .
 
