@@ -53,10 +53,18 @@ uv sync
 This automatically creates a virtual environment and installs all required packages from `pyproject.toml`.
 
 ### 2. Configure your API keys
+
+**Windows (PowerShell):**
 ```powershell
 Copy-Item .env.example .env
-# Edit .env and fill in your keys
 ```
+
+**macOS / Linux:**
+```bash
+cp .env.example .env
+```
+
+**Then edit `.env` and fill in your keys.**
 
 Get your keys:
 - **Google Gemini**: https://aistudio.google.com/app/apikey

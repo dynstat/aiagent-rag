@@ -15,8 +15,7 @@ PURPOSE: One-time (or periodic) script to load your custom documents into
          5. Next time the agent calls rag_search(), it searches these embeddings
 
          HOW TO RUN:
-             & d:\\proj\\aiagent-rag\\.venv\\Scripts\\Activate.ps1
-             python data/ingest.py
+             uv run data/ingest.py
 """
 
 import os

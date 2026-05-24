@@ -41,18 +41,19 @@ aiagent-rag/
 
 ## Quick Start
 
-```powershell
-# 1. Activate venv
-& d:\proj\aiagent-rag\.venv\Scripts\Activate.ps1
+```bash
+# 1. Install dependencies (creates virtual environment)
+uv sync
 
-# 2. Edit .env — add your GOOGLE_API_KEY at minimum
-notepad .env
+# 2. Configure your API keys (copy .env.example to .env and edit)
+# Windows: Copy-Item .env.example .env
+# Mac/Linux: cp .env.example .env
 
 # 3. Ingest knowledge base (one-time)
-python data/ingest.py
+uv run data/ingest.py
 
 # 4. Run the agent
-python main.py
+uv run main.py
 ```
 
 ## Available Tools
