@@ -44,10 +44,13 @@ aiagent-rag/
 
 ## Setup
 
-### 1. Clone and activate the virtual environment
-```powershell
-& d:\proj\aiagent-rag\.venv\Scripts\Activate.ps1
+This project uses [uv](https://github.com/astral-sh/uv) for extremely fast Python package and project management.
+
+### 1. Install dependencies
+```bash
+uv sync
 ```
+This automatically creates a virtual environment and installs all required packages from `pyproject.toml`.
 
 ### 2. Configure your API keys
 ```powershell
@@ -60,14 +63,28 @@ Get your keys:
 - **Groq**: https://console.groq.com/keys
 
 ### 3. Ingest your knowledge base (one-time setup)
-```powershell
+```bash
 # Add your technical documents (.pdf, .md, .txt) to data/knowledge_base/
-python data/ingest.py
+uv run data/ingest.py
 ```
 
 ### 4. Run the agent
-```powershell
-python main.py
+```bash
+uv run main.py
+```
+
+## Project Management
+
+### Adding new packages
+If you need to add new tools or libraries:
+```bash
+uv add <package_name>
+```
+
+### Updating the knowledge base
+Whenever you add or remove files in `data/knowledge_base/`, simply re-run the ingestion:
+```bash
+uv run data/ingest.py
 ```
 
 ## Example Queries (using sample data)
