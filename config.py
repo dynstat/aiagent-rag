@@ -44,7 +44,7 @@ class Config:
 
     # ── Groq (High-speed Inference) ──────────────────────────────────────────
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # ── LangSmith Tracing ────────────────────────────────────────────────────
     LANGCHAIN_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "")

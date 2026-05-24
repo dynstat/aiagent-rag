@@ -133,12 +133,20 @@ def interactive_chat(agent: AgentRunner) -> None:
     Args:
         agent: The initialized AgentRunner instance.
     """
+    # Determine model name for display
+    if Config.LLM_PROVIDER == "gemini":
+        model_name = Config.GEMINI_MODEL
+    elif Config.LLM_PROVIDER == "openai":
+        model_name = Config.OPENAI_MODEL
+    elif Config.LLM_PROVIDER == "groq":
+        model_name = Config.GROQ_MODEL
+    else:
+        model_name = "unknown"
+
     print("\n" + "=" * 60)
     print("  AI Agent RAG — Technical Knowledge Assistant")
     print("=" * 60)
-    print(
-        f"  Provider : {Config.LLM_PROVIDER.upper()} ({Config.GEMINI_MODEL if Config.LLM_PROVIDER == 'gemini' else Config.OPENAI_MODEL})"
-    )
+    print(f"  Provider : {Config.LLM_PROVIDER.upper()} ({model_name})")
     print(f"  Thread   : {agent.thread_id[:8]}...")
     print("=" * 60)
     print("  Commands: /history | /new | /tools | /quit")
