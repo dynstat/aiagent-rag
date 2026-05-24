@@ -74,8 +74,19 @@ def get_llm(temperature: float = 0.0) -> BaseChatModel:
             },
         )
 
+    elif provider == "groq":
+        # ── Groq (High-speed Llama/Mixtral inference) ────────────────────────
+        from langchain_groq import ChatGroq
+        from pydantic import SecretStr
+
+        return ChatGroq(
+            model=Config.GROQ_MODEL,
+            api_key=SecretStr(Config.GROQ_API_KEY),
+            temperature=temperature,
+        )
+
     else:
         raise ValueError(
             f"Unknown LLM_PROVIDER='{Config.LLM_PROVIDER}'. "
-            "Valid values: 'gemini', 'openai'"
+            "Valid values: 'gemini', 'openai', 'groq'"
         )
