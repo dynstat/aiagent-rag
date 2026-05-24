@@ -43,6 +43,9 @@ class Config:
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     # ── Groq (High-speed Inference) ──────────────────────────────────────────
+    # NOTE: Llama 3 models on Groq are sensitive to tool instructions in the
+    # system prompt. Keep the prompt clean and avoid mentioning tool names
+    # directly to ensure the model uses the structured tool-calling API.
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
