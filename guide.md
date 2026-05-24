@@ -164,37 +164,9 @@ This section provides a complete map of every function in the codebase, detailin
     *   *Purpose*: A tool wrapping ChromaDB similarity search to retrieve text snippets matching the search criteria.
     *   *Input*: `query: str`
     *   *Output*: `str`
-*   **`lookup_rep_profile(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
-    *   *Purpose*: Queries the CRM database to fetch metadata profile details of a sales representative.
-    *   *Input*: `rep_id: str`
-    *   *Output*: `str` (JSON representation)
-*   **`calculate_quota_attainment(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
-    *   *Purpose*: Calculates a representative's quota attainment percentage and returns pacing evaluation.
-    *   *Input*: `rep_id: str`
-    *   *Output*: `str`
-*   **`get_rep_deals(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
-    *   *Purpose*: Retrieves active and recent CRM opportunities, close dates, stages, and totals pipeline values.
-    *   *Input*: `rep_id: str`
-    *   *Output*: `str` (JSON representation)
-*   **`list_all_reps()`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
-    *   *Purpose*: Lists every representative's ID, name, territory, and product focus line.
-    *   *Input*: None
-    *   *Output*: `str`
-*   **`summarize_rep_context(rep_id)`** (in [rep_tools.py](file:///d:/proj/aiagent-rag/tools/rep_tools.py))
-    *   *Purpose*: Unified tool aggregating profile info, quota attainment, and pipeline deals in a single consolidated report.
-    *   *Input*: `rep_id: str`
-    *   *Output*: `str`
 *   **`get_current_date_and_time()`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
     *   *Purpose*: Exposes system timezone, current date/time, year progress, and current quarter.
     *   *Input*: None
-    *   *Output*: `str`
-*   **`calculate_rep_ranking(metric)`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
-    *   *Purpose*: Generates a ranked leaderboard of sales reps by quota attainment, YTD sales, or tenure.
-    *   *Input*: `metric: str`
-    *   *Output*: `str`
-*   **`format_currency(amount, currency)`** (in [utility_tools.py](file:///d:/proj/aiagent-rag/tools/utility_tools.py))
-    *   *Purpose*: Formats monetary values to clean currency representations (USD, EUR, GBP).
-    *   *Input*: `amount: float`, `currency: str`
     *   *Output*: `str`
 
 ---
@@ -205,12 +177,9 @@ To understand how these components interact, let's walk through a concrete examp
 
 ### 📝 Scenario & Sample Data
 
-Suppose our local knowledge base and CRM database contain the following information:
-*   **CRM Database (`rep_tools.py`)**:
-    *   `REP001` (Alice Johnson): Quota: `$500,000` | YTD Sales: `$312,000` | Quota Attainment: `62.4%` | Manager: `Bob Martinez`
-    *   `REP003` (Diana Patel): Quota: `$600,000` | YTD Sales: `$540,000` | Quota Attainment: `90.0%` | Manager: `Bob Martinez`
-*   **Knowledge Base File (`coaching_notes.md`)**:
-    *   Contains the manager's evaluation details: Alice tends to rely on a single champion and needs to multi-thread. Diana has deep relationships in healthcare tech and is a mentor.
+Suppose our local knowledge base contains:
+*   **Knowledge Base File (`Async Rust (Maxwell Flitton, Caroline Morton).pdf`)**:
+    *   Contains descriptions of Async Rust concepts and lists the authors Maxwell Flitton and Caroline Morton.
 
 ---
 
@@ -218,20 +187,20 @@ Suppose our local knowledge base and CRM database contain the following informat
 
 #### Step 1: User Query Input
 The user types the query:
-> *"Compare Diana Patel's quota attainment with Alice Johnson and tell me if they are on track based on manager notes."*
+> *"What is Async Rust, and who is the author of the Async Rust book? Mention the date you are checking this."*
 The REPL loop in `main.py` passes this string to `AgentRunner.run()`.
 
 #### Step 2: Session Initialization & Graph State Setup
 `AgentRunner` saves the message to short-term memory (`self.memory`), wraps it in a LangChain `HumanMessage`, and starts streaming graph execution:
-*   **Graph State Initialization**: `state = {"messages": [HumanMessage(content="Compare Diana Patel's...")]}`
+*   **Graph State Initialization**: `state = {"messages": [HumanMessage(content="What is Async Rust...")]}`
 
 #### Step 3: Reasoning Node (`llm_node`)
 The graph moves to the `"llm"` node.
 1.  `llm_node()` is invoked, prepending the `SYSTEM_PROMPT` to the state messages.
 2.  `llm.bind_tools(ALL_TOOLS)` evaluates the query. The LLM understands that:
-    *   It needs the exact numerical quota details for Alice and Diana. It resolves their names to `REP001` and `REP003` and schedules `calculate_quota_attainment("REP001")` and `calculate_quota_attainment("REP003")` tool calls.
-    *   It needs descriptive context from the coaching notes. It schedules a `rag_search(query="coaching notes Alice Johnson Diana Patel")` tool call.
-3.  The node returns the LLM response containing these 3 `tool_calls` requests.
+    *   It needs semantic details about Async Rust and its authors. It schedules `rag_search(query="Async Rust book author definition")`.
+    *   It needs the current date and time. It schedules a `get_current_date_and_time()` tool call.
+3.  The node returns the LLM response containing these 2 `tool_calls` requests.
 
 #### Step 4: Routing Check (`tools_condition`)
 LangGraph checks the `AIMessage` returned by the LLM node:
@@ -239,15 +208,11 @@ LangGraph checks the `AIMessage` returned by the LLM node:
 
 #### Step 5: Tools Execution (`ToolNode`)
 The `ToolNode` executes the requested functions:
-1.  **`calculate_quota_attainment("REP001")`** computes:
-    *   Annual Quota Progress vs Time (e.g. `39.5%` progress of year).
-    *   Attainment: `62.4%` (Status: `🟢 On Track`).
-2.  **`calculate_quota_attainment("REP003")`** computes:
-    *   Attainment: `90.0%` (Status: `🟢 On Track`).
-3.  **`rag_search("coaching notes Alice Johnson Diana Patel")`**:
-    *   Calls `get_retriever().invoke("coaching notes...")` which uses HuggingFace embeddings (`embeddings.py`) to encode the text query.
-    *   Queries `ChromaDB` (`vector_store.py`) to find matching document chunks from `coaching_notes.md`.
-    *   Returns the coaching text snippets for Alice and Diana.
+1.  **`rag_search("Async Rust book author definition")`**:
+    *   Calls `get_retriever().invoke("Async Rust...")` which uses HuggingFace embeddings (`embeddings.py`) to encode the text query.
+    *   Queries `ChromaDB` (`vector_store.py`) to find matching document chunks from the `Async Rust` PDF.
+    *   Returns the matched text snippets.
+2.  **`get_current_date_and_time()`** returns the system's current timezone, date, and year progress details.
 *   The results are appended to the state graph as `ToolMessage`s.
 
 #### Step 6: Loop Back to Reasoning Node (`llm_node`)
@@ -255,10 +220,8 @@ The graph follows the fixed edge from `"tools"` back to `"llm"`.
 1.  `llm_node()` is invoked again. The model is now provided with:
     *   The original user prompt.
     *   Its own tool call commands.
-    *   The results returned by the tools (numerical quota status and descriptive manager coaching notes).
-2.  The LLM synthesizes this combined database and document information:
-    *   It calculates the difference in quota attainment (`90%` vs `62.4%`).
-    *   It extracts coaching advice (Alice needs to work on multi-threading accounts; Diana is an overachiever being considered for a lead role).
+    *   The results returned by the tools (Async Rust concepts, the book's authors, and the current date).
+2.  The LLM synthesizes this combined information to build a coherent final response.
 3.  The node returns the final synthesized markdown response.
 
 #### Step 7: Final End Route (`tools_condition`)
@@ -297,13 +260,11 @@ graph TD
     Runner --> Response([Final Terminal Response])
 
     subgraph ToolCatalog["Registered Tools (tools/)"]
-        ToolNode --> RepTool["lookup_rep_profile()<br>calculate_quota_attainment()<br>get_rep_deals()"]:::tool
-        ToolNode --> UtilTool["calculate_rep_ranking()<br>get_current_date_and_time()"]:::tool
+        ToolNode --> UtilTool["get_current_date_and_time()"]:::tool
         ToolNode --> RagSearch["rag_search()"]:::tool
     end
 
     subgraph DBs["Data Layer"]
-        RepTool --> CRM[(REPS_DB / DEALS_DB)]:::database
         UtilTool --> SystemClock[(System Calendar)]:::database
         RagSearch --> Retriever[rag/vector_store.py: get_retriever]:::database
         Retriever --> Embeddings[rag/embeddings.py: get_embeddings]
@@ -346,7 +307,7 @@ When the agent uses `rag_search("remote work policy")`:
 To make this project your own, follow these 3 steps:
 
 ### A. Change the Agent's Persona
-Open `agent/runner.py`. Find `_get_system_prompt()`. Rewrite it completely!
+Open `agent/graph.py`. Find `SYSTEM_PROMPT`. Rewrite it completely!
 *"You are a highly strictly customer support bot for Company X. Never apologize. Always check the knowledge base before answering..."*
 
 ### B. Add Your Own Knowledge

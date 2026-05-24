@@ -164,7 +164,7 @@ To change how the agent behaves or its default expertise, edit the `SYSTEM_PROMP
 User Question
      │
      ▼
-LLM Node (Gemini/OpenAI)
+LLM Node (Gemini/OpenAI/Groq)
   → Reads system prompt + conversation history
   → Decides: call a tool OR answer directly
      │
