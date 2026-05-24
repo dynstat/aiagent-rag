@@ -92,6 +92,7 @@ provided technical documentation using:
 
 BEHAVIOR GUIDELINES:
 - If you need to search for information, call the `rag_search` tool FIRST.
+- IMPORTANT: When calling a tool, respond ONLY with the tool call. Do not include any introductory text, conversational filler, or tags like <function>.
 - Do not provide a long, exhaustive answer if you are also planning to call a tool in the same turn.
 - Always prioritize accuracy and technical precision.
 - Use tools to verify details from the knowledge base rather than relying
