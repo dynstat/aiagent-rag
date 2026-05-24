@@ -69,12 +69,25 @@ if Config.OPENAI_API_KEY:
     os.environ["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
 if Config.OPENAI_BASE_URL:
     os.environ["OPENAI_BASE_URL"] = Config.OPENAI_BASE_URL
+if Config.GROQ_API_KEY:
+    os.environ["GROQ_API_KEY"] = Config.GROQ_API_KEY
 
-# Debug: confirm the key loaded (shows only first 8 chars — safe to display)
-_key_preview = Config.OPENAI_API_KEY[:8] + "..." if Config.OPENAI_API_KEY else "NOT SET"
-print(
-    f"[Config] Provider={Config.LLM_PROVIDER} | Model={Config.OPENAI_MODEL} | Key={_key_preview}"
-)
+# Determine model and key for debug display
+if Config.LLM_PROVIDER == "gemini":
+    _model = Config.GEMINI_MODEL
+    _key = Config.GOOGLE_API_KEY
+elif Config.LLM_PROVIDER == "openai":
+    _model = Config.OPENAI_MODEL
+    _key = Config.OPENAI_API_KEY
+elif Config.LLM_PROVIDER == "groq":
+    _model = Config.GROQ_MODEL
+    _key = Config.GROQ_API_KEY
+else:
+    _model = "unknown"
+    _key = ""
+
+_key_preview = _key[:8] + "..." if _key else "NOT SET"
+print(f"[Config] Provider={Config.LLM_PROVIDER} | Model={_model} | Key={_key_preview}")
 
 from agent import AgentRunner
 
